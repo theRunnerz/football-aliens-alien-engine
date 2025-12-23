@@ -1,11 +1,19 @@
 <script>
   import AlienSelector from '$lib/AlienSelector.svelte';
   import AlienCard from '$lib/AlienCard.svelte';
+  import { memory, streak } from '$lib/store';
 
-  let context = '';
+  let mode = 'sleep';
   let alien = 'default';
   let result = null;
   let loading = false;
+
+  let sleepData = {
+    sleptAt: '',
+    wokeAt: '',
+    energy: 5,
+    goal: ''
+  };
 
   async function askAlien() {
     loading = true;
@@ -14,26 +22,37 @@
     const res = await fetch('/api/ask-alien', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context, alien })
+      body: JSON.stringify({ alien, mode, data: sleepData })
     });
 
     result = await res.json();
+
+    memory.update(m => [...m, { mode, result, date: Date.now() }]);
+    streak.update(s => s + 1);
+
     loading = false;
   }
 </script>
 
 <div class="container">
   <h1>👽 Football Aliens</h1>
-  <p class="subtitle">Alien Tradeoff Engine</p>
+  <p class="subtitle">Optimize the human vessel</p>
 
   <AlienSelector bind:alien />
 
-  <textarea
-    placeholder="Describe your situation… (sleep, habits, distractions, decisions)"
-    bind:value={context}
-  />
+  <div class="mode">
+    <button class:selected={mode==='sleep'} on:click={() => mode='sleep'}>🌙 Sleep</button>
+    <button class:selected={mode==='decision'} on:click={() => mode='decision'}>🧠 Decision</button>
+  </div>
 
-  <button on:click={askAlien} disabled={loading || !context}>
+  {#if mode === 'sleep'}
+    <input type="time" bind:value={sleepData.sleptAt} />
+    <input type="time" bind:value={sleepData.wokeAt} />
+    <input type="range" min="1" max="10" bind:value={sleepData.energy} />
+    <input placeholder="Tomorrow’s priority" bind:value={sleepData.goal} />
+  {/if}
+
+  <button on:click={askAlien} disabled={loading}>
     {loading ? 'Analyzing…' : 'Ask the Alien'}
   </button>
 
@@ -43,49 +62,8 @@
 </div>
 
 <style>
-  .container {
-    width: 100%;
-    max-width: 480px;
-    background: rgba(5, 8, 15, 0.9);
-    padding: 1.5rem;
-    border-radius: 20px;
-    border: 1px solid #1aff64;
-  }
-
-  h1 {
-    text-align: center;
-    margin-bottom: 0.2rem;
-  }
-
-  .subtitle {
-    text-align: center;
-    opacity: 0.7;
-    margin-bottom: 1rem;
-  }
-
-  textarea {
-    width: 100%;
-    min-height: 120px;
-    background: #02030a;
-    color: #eafff1;
-    border: 1px solid #1aff64;
-    border-radius: 12px;
-    padding: 0.8rem;
-    margin-bottom: 1rem;
-  }
-
-  button {
-    width: 100%;
-    padding: 0.9rem;
-    border-radius: 12px;
-    background: #1aff64;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  .container { max-width: 480px; }
+  .mode { display:flex; gap:0.5rem; margin-bottom:1rem; }
+  .mode button { flex:1; }
+  input { width:100%; margin-bottom:0.6rem; padding:0.6rem; }
 </style>
