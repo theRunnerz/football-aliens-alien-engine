@@ -97,7 +97,7 @@ document
   .addEventListener("click", connectWallet);
 document.getElementById("getFbaBtn").addEventListener("click", () => {
   window.open(
-    "https://sunswap.com/#/swap?inputCurrency=TRX&outputCurrency=TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN",
+    "https://sunpump.meme/token/TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN",
     "_blank"
   );
 });
