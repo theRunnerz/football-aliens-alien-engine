@@ -5,12 +5,22 @@ const FBA_CONTRACT = "TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN";
 let userAddress = null;
 
 async function connectWallet() {
-  if (!window.tronWeb || !window.tronWeb.ready) {
-    alert("TronLink wallet required");
+  console.log("Connect button clicked");
+
+  if (!window.tronWeb) {
+    alert("TronLink not detected. Please install TronLink.");
+    return;
+  }
+
+  // TronLink injected but wallet locked
+  if (!window.tronWeb.defaultAddress.base58) {
+    alert("Please unlock TronLink and approve this site.");
     return;
   }
 
   userAddress = window.tronWeb.defaultAddress.base58;
+
+  console.log("Connected address:", userAddress);
 
   document.getElementById("walletStatus").innerText =
     `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
