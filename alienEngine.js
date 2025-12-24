@@ -123,7 +123,7 @@ function sendMessage() {
 
   try {
     const res = await fetch(
-      "https://football-aliens-gemini.yourname.workers.dev",
+      "https://football-aliens-gemini.corb-pratt.workers.dev",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
