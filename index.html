@@ -2,57 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Football Aliens — Alien Engine</title>
+  <title>Football Alien Engine</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    body {
+      background: #0b0b12;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+
+    button {
+      padding: 12px 18px;
+      margin: 6px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    #aliens button {
+      background: #1b1b2e;
+      color: white;
+    }
+
+    #chatBox {
+      margin-top: 20px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    input {
+      width: 80%;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    #messages {
+      margin-top: 15px;
+      min-height: 80px;
+      opacity: 0.9;
+    }
+
+    #status {
+      margin-top: 10px;
+      opacity: 0.8;
+    }
+  </style>
 </head>
 <body>
 
-  <h1>👽 Football Aliens</h1>
-  <h2>Alien Engine — Public Demo</h2>
+  <h1>👽 Football Alien Engine</h1>
 
-  <!-- Wallet -->
-  <div style="margin-bottom: 15px;">
-    <button id="connectWallet">👽 Connect TronLink</button>
-    <button id="getFBA">🪙 Get FBA</button>
-  </div>
+  <button id="connectWalletBtn">🔌 Connect Wallet</button>
+  <button id="getFBABtn">🪙 Get FBA</button>
 
-  <!-- Status -->
-  <div id="trialNotice" style="margin:10px 0; color:#c00; font-weight:bold;"></div>
+  <div id="status">Free Trial: Checking…</div>
 
-  <hr />
-
-  <!-- Alien Selection -->
   <h3>Select Your Alien</h3>
-
-  <button class="alien" data-alien="sleep">😴 Sleep Alien</button>
-  <p>😴 Fix your sleep schedule with alien discipline.</p>
-
-  <button class="alien" data-alien="coach">🏈 Coach Alien</button>
-  <button class="alien" data-alien="chaos">⚔️ Chaos Alien</button>
-
-  <hr />
-
-  <!-- Active Alien -->
-  <h3 id="alienTitle">No Alien Selected</h3>
-
-  <!-- Chat -->
-  <div id="chat">
-    <textarea
-      id="userInput"
-      rows="3"
-      placeholder="Talk to your alien..."
-      disabled
-    ></textarea>
-    <br />
-    <button id="sendBtn" disabled>Send</button>
+  <div id="aliens">
+    <button data-alien="Zorg">Zorg</button>
+    <button data-alien="Blip">Blip</button>
+    <button data-alien="Xarn">Xarn</button>
   </div>
 
-  <p id="response" style="margin-top:10px;"></p>
+  <div id="chatBox">
+    <input id="chatInput" placeholder="Talk to your alien..." disabled />
+    <button id="sendBtn" disabled>Send</button>
+    <div id="messages"></div>
+  </div>
 
-  <!-- Scripts -->
-  <script src="wallet.js"></script>
-  <script src="alienEngine.js"></script>
-
+  <script src="./alienEngine.js"></script>
 </body>
 </html>
