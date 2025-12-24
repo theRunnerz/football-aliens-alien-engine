@@ -1,225 +1,146 @@
+console.log("👽 Alien Engine booting…");
+
+/* ======================
+   CONFIG
+====================== */
+const FBA_CONTRACT = "TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN";
+const REQUIRED_FBA = 420;
+const TRIAL_DAYS = 7;
+
+/* ======================
+   STATE
+====================== */
+let tronWeb = null;
+let walletAddress = null;
+let selectedAlien = null;
+
+/* ======================
+   WALLET
+====================== */
+async function connectWallet() {
+  if (!window.tronWeb || !window.tronWeb.ready) {
+    alert("Install / unlock TronLink");
+    return;
+  }
+
+  tronWeb = window.tronWeb;
+  walletAddress = tronWeb.defaultAddress.base58;
+
+  document.getElementById("status").innerText =
+    "Connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
+
+  await checkAccess();
+}
+
+function getFBA() {
+  window.open("https://sunpump.meme", "_blank");
+}
+
+/* ======================
+   TRIAL + TOKEN GATE
+====================== */
+function getTrialStart() {
+  const stored = localStorage.getItem("trialStart");
+  if (stored) return parseInt(stored);
+
+  const now = Date.now();
+  localStorage.setItem("trialStart", now.toString());
+  return now;
+}
+
+function trialExpired() {
+  const start = getTrialStart();
+  const daysPassed = (Date.now() - start) / (1000 * 60 * 60 * 24);
+  return daysPassed > TRIAL_DAYS;
+}
+
+async function hasEnoughFBA() {
+  try {
+    const contract = await tronWeb.contract().at(FBA_CONTRACT);
+    const balance = await contract.balanceOf(walletAddress).call();
+    const readable = Number(balance) / 1e6; // TRC20 decimals
+
+    return readable >= REQUIRED_FBA;
+  } catch (e) {
+    console.error("Token check failed", e);
+    return false;
+  }
+}
+
+async function checkAccess() {
+  const status = document.getElementById("status");
+
+  if (!trialExpired()) {
+    enableChat();
+    status.innerText = "🆓 Free Trial Active";
+    return;
+  }
+
+  if (!walletAddress) {
+    status.innerText = "Trial ended – connect wallet";
+    return;
+  }
+
+  const allowed = await hasEnoughFBA();
+  if (allowed) {
+    enableChat();
+    status.innerText = "✅ FBA Holder Access";
+  } else {
+    disableChat();
+    status.innerText = "❌ Need 420 FBA to continue";
+  }
+}
+
+/* ======================
+   CHAT
+====================== */
+function enableChat() {
+  document.getElementById("chatInput").disabled = false;
+  document.getElementById("sendBtn").disabled = false;
+}
+
+function disableChat() {
+  document.getElementById("chatInput").disabled = true;
+  document.getElementById("sendBtn").disabled = true;
+}
+
+function sendMessage() {
+  const input = document.getElementById("chatInput");
+  const messages = document.getElementById("messages");
+
+  if (!selectedAlien) {
+    alert("Select an alien first");
+    return;
+  }
+
+  if (!input.value.trim()) return;
+
+  messages.innerHTML += `<div><b>You:</b> ${input.value}</div>`;
+  messages.innerHTML += `<div><b>${selectedAlien}:</b> 👽 *alien response*</div>`;
+
+  input.value = "";
+}
+
+/* ======================
+   ALIENS
+====================== */
+function selectAlien(name) {
+  selectedAlien = name;
+  document.getElementById("messages").innerHTML =
+    `<div>👽 ${name} selected</div>`;
+}
+
+/* ======================
+   INIT
+====================== */
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("connectWalletBtn").onclick = connectWallet;
+  document.getElementById("getFBABtn").onclick = getFBA;
+  document.getElementById("sendBtn").onclick = sendMessage;
 
-  // ==============================
-  // CONFIG
-  // ==============================
-
-  const TRIAL_DAYS = 7;
-  const DAILY_LIMIT = 10;
-
-  const FBA_CONTRACT = "TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN";
-  const REQUIRED_FBA = 420;
-  const FBA_DECIMALS = 6;
-
-  // ==============================
-  // STATE
-  // ==============================
-
-  let currentAlien = null;
-  let unlockedByToken = false;
-  let walletAddress = null;
-
-  // ==============================
-  // DOM
-  // ==============================
-
-  const alienButtons = document.querySelectorAll(".alien");
-  const alienTitle = document.getElementById("alienTitle");
-  const userInput = document.getElementById("userInput");
-  const sendBtn = document.getElementById("sendBtn");
-  const responseBox = document.getElementById("response");
-  const trialNotice = document.getElementById("trialNotice");
-
-  // ==============================
-  // WALLET
-  // ==============================
-
-  function getWalletAddress() {
-    if (window.tronWeb && tronWeb.defaultAddress.base58) {
-      return tronWeb.defaultAddress.base58;
-    }
-    return "guest";
-  }
-
-  // ==============================
-  // PER-WALLET TRIAL
-  // ==============================
-
-  function checkTrial() {
-    walletAddress = getWalletAddress();
-    const trialKey = `fa_trial_${walletAddress}`;
-
-    const now = Date.now();
-    let trialStart = localStorage.getItem(trialKey);
-
-    if (!trialStart) {
-      localStorage.setItem(trialKey, now);
-      trialStart = now;
-    }
-
-    const elapsedDays =
-      (now - trialStart) / (1000 * 60 * 60 * 24);
-
-    if (elapsedDays >= TRIAL_DAYS && !unlockedByToken) {
-      lockApp();
-      trialNotice.innerText =
-        "⏳ Trial ended. Hold 420 FBA to unlock.";
-    } else if (!unlockedByToken) {
-      const daysLeft = Math.ceil(TRIAL_DAYS - elapsedDays);
-      trialNotice.innerText =
-        `🆓 Free trial: ${daysLeft} day(s) remaining`;
-      unlockApp(false);
-    }
-  }
-
-  // ==============================
-  // DAILY MESSAGE LIMIT
-  // ==============================
-
-  function getTodayKey() {
-    const today = new Date().toISOString().slice(0, 10);
-    return `fa_msgs_${walletAddress}_${today}`;
-  }
-
-  function getMessagesUsed() {
-    return Number(localStorage.getItem(getTodayKey())) || 0;
-  }
-
-  function incrementMessages() {
-    const used = getMessagesUsed() + 1;
-    localStorage.setItem(getTodayKey(), used);
-    return used;
-  }
-
-  function checkDailyLimit() {
-    if (unlockedByToken) return true;
-
-    const used = getMessagesUsed();
-    if (used >= DAILY_LIMIT) {
-      responseBox.innerText =
-        "🚫 Daily message limit reached. Hold 420 FBA for unlimited access.";
-      return false;
-    }
-    return true;
-  }
-
-  // ==============================
-  // FBA CHECK
-  // ==============================
-
-  async function checkFBABalance() {
-    if (!window.tronWeb || !tronWeb.defaultAddress.base58) return;
-
-    try {
-      const contract = await tronWeb.contract().at(FBA_CONTRACT);
-      const balance = await contract.balanceOf(
-        tronWeb.defaultAddress.base58
-      ).call();
-
-      const normalized =
-        Number(balance) / Math.pow(10, FBA_DECIMALS);
-
-      if (normalized >= REQUIRED_FBA) {
-        unlockedByToken = true;
-        unlockApp(true);
-      }
-    } catch (err) {
-      console.error("FBA check failed", err);
-    }
-  }
-
-  // ==============================
-  // LOCK / UNLOCK
-  // ==============================
-
-  function lockApp() {
-    userInput.disabled = true;
-    sendBtn.disabled = true;
-    document.body.classList.add("locked");
-  }
-
-  function unlockApp(byToken) {
-    document.body.classList.remove("locked");
-    userInput.disabled = false;
-    sendBtn.disabled = false;
-
-    if (byToken) {
-      trialNotice.innerText =
-        "✅ Unlimited access (420 FBA holder)";
-    }
-  }
-
-  // ==============================
-  // ALIEN SELECTION
-  // ==============================
-
-  alienButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      currentAlien = btn.dataset.alien;
-      alienTitle.innerText = getAlienName(currentAlien);
-      responseBox.innerText = "👽 Alien connected. Speak.";
-    });
+  document.querySelectorAll("#aliens button").forEach(btn => {
+    btn.onclick = () => selectAlien(btn.dataset.alien);
   });
 
-  // ==============================
-  // CHAT
-  // ==============================
-
-  sendBtn.addEventListener("click", () => {
-
-    if (document.body.classList.contains("locked")) {
-      responseBox.innerText =
-        "🔒 Access locked. Hold 420 FBA.";
-      return;
-    }
-
-    if (!currentAlien) {
-      responseBox.innerText = "👽 Select an alien first.";
-      return;
-    }
-
-    if (!checkDailyLimit()) return;
-
-    incrementMessages();
-
-    responseBox.innerText = localAlienReply(currentAlien);
-    userInput.value = "";
-  });
-
-  // ==============================
-  // ALIEN BRAINS
-  // ==============================
-
-  function localAlienReply(alien) {
-    switch (alien) {
-      case "sleep":
-        return "😴 Sleep Alien: Consistency beats intensity. Wake time first.";
-      case "coach":
-        return "🏈 Coach Alien: Execute. Review. Repeat.";
-      case "chaos":
-        return "⚔️ Chaos Alien: Comfort is why you’re still here.";
-      default:
-        return "👽 The alien observes.";
-    }
-  }
-
-  function getAlienName(alien) {
-    switch (alien) {
-      case "sleep": return "😴 Sleep Alien";
-      case "coach": return "🏈 Coach Alien";
-      case "chaos": return "⚔️ Chaos Alien";
-      default: return "Unknown Alien";
-    }
-  }
-
-  // ==============================
-  // INIT
-  // ==============================
-
-  setTimeout(() => {
-    walletAddress = getWalletAddress();
-    checkTrial();
-    checkFBABalance();
-  }, 1500);
-
+  checkAccess();
 });
