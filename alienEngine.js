@@ -1,11 +1,37 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   // ==============================
-  // 7 DAY FREE TRIAL
+  // CONFIG
   // ==============================
 
   const TRIAL_DAYS = 7;
   const TRIAL_KEY = "footballAliensTrialStart";
+
+  const FBA_CONTRACT = "TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN";
+  const REQUIRED_FBA = 420;
+  const FBA_DECIMALS = 6;
+
+  // ==============================
+  // STATE
+  // ==============================
+
+  let currentAlien = null;
+  let unlockedByToken = false;
+
+  // ==============================
+  // DOM
+  // ==============================
+
+  const alienButtons = document.querySelectorAll(".alien");
+  const alienTitle = document.getElementById("alienTitle");
+  const userInput = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const responseBox = document.getElementById("response");
+  const trialNotice = document.getElementById("trialNotice");
+
+  // ==============================
+  // TRIAL CHECK
+  // ==============================
 
   const now = Date.now();
   let trialStart = localStorage.getItem(TRIAL_KEY);
@@ -21,33 +47,56 @@ document.addEventListener("DOMContentLoaded", () => {
   const trialExpired = trialElapsedDays >= TRIAL_DAYS;
 
   // ==============================
-  // STATE
+  // WALLET + FBA CHECK
   // ==============================
 
-  let currentAlien = null;
+  async function checkFBABalance() {
+    if (!window.tronWeb || !tronWeb.defaultAddress.base58) return;
+
+    try {
+      const contract = await tronWeb.contract().at(FBA_CONTRACT);
+      const balance = await contract.balanceOf(
+        tronWeb.defaultAddress.base58
+      ).call();
+
+      const normalized =
+        Number(balance) / Math.pow(10, FBA_DECIMALS);
+
+      if (normalized >= REQUIRED_FBA) {
+        unlockedByToken = true;
+        unlockApp();
+      }
+    } catch (err) {
+      console.error("FBA check failed", err);
+    }
+  }
 
   // ==============================
-  // DOM ELEMENTS
+  // LOCK / UNLOCK
   // ==============================
 
-  const alienButtons = document.querySelectorAll(".alien");
-  const alienTitle = document.getElementById("alienTitle");
-  const userInput = document.getElementById("userInput");
-  const sendBtn = document.getElementById("sendBtn");
-  const responseBox = document.getElementById("response");
-  const trialNotice = document.getElementById("trialNotice");
-
-  // ==============================
-  // TRIAL ENFORCEMENT
-  // ==============================
-
-  if (trialExpired) {
-    trialNotice.innerText =
-      "⏳ Free trial ended. Hold 420 FBA tokens to continue.";
-
+  function lockApp() {
     userInput.disabled = true;
     sendBtn.disabled = true;
     document.body.classList.add("locked");
+  }
+
+  function unlockApp() {
+    document.body.classList.remove("locked");
+    userInput.disabled = false;
+    sendBtn.disabled = false;
+    trialNotice.innerText =
+      "✅ Access unlocked by holding 420 FBA";
+  }
+
+  // ==============================
+  // INITIAL ACCESS STATE
+  // ==============================
+
+  if (trialExpired) {
+    lockApp();
+    trialNotice.innerText =
+      "⏳ Trial ended. Hold 420 FBA tokens to continue.";
   } else {
     const daysLeft = Math.ceil(TRIAL_DAYS - trialElapsedDays);
     trialNotice.innerText =
@@ -63,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentAlien = btn.dataset.alien;
       alienTitle.innerText = getAlienName(currentAlien);
 
-      if (!trialExpired) {
+      if (!document.body.classList.contains("locked")) {
         userInput.disabled = false;
         sendBtn.disabled = false;
       }
@@ -73,14 +122,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ==============================
-  // SEND MESSAGE
+  // CHAT
   // ==============================
 
   sendBtn.addEventListener("click", () => {
 
     if (document.body.classList.contains("locked")) {
       responseBox.innerText =
-        "🔒 Trial ended. Hold 420 FBA tokens to unlock.";
+        "🔒 Hold 420 FBA tokens to unlock full access.";
       return;
     }
 
@@ -92,42 +141,43 @@ document.addEventListener("DOMContentLoaded", () => {
     const message = userInput.value.trim();
     if (!message) return;
 
-    const reply = localAlienReply(currentAlien);
-    responseBox.innerText = reply;
+    responseBox.innerText = localAlienReply(currentAlien);
     userInput.value = "";
   });
 
   // ==============================
-  // ALIEN BRAINS (LOCAL DEMO)
+  // ALIEN BRAINS (DEMO)
   // ==============================
 
   function localAlienReply(alien) {
     switch (alien) {
       case "sleep":
-        return "😴 Sleep Alien: Wake up at the same time every day. Light first, caffeine later. Discipline wins.";
+        return "😴 Sleep Alien: Fixed wake time. Morning light. No excuses.";
 
       case "coach":
-        return "🏈 Coach Alien: Stop hesitating. Execute the plan. Winners don’t negotiate with weakness.";
+        return "🏈 Coach Alien: You don’t need motivation. You need discipline.";
 
       case "chaos":
-        return "⚔️ Chaos Alien: You already know the answer. You’re just afraid to commit.";
+        return "⚔️ Chaos Alien: Comfort is the enemy. Choose violence against bad habits.";
 
       default:
-        return "👽 The alien watches silently.";
+        return "👽 The alien observes.";
     }
   }
 
   function getAlienName(alien) {
     switch (alien) {
-      case "sleep":
-        return "😴 Sleep Alien";
-      case "coach":
-        return "🏈 Coach Alien";
-      case "chaos":
-        return "⚔️ Chaos Alien";
-      default:
-        return "Unknown Alien";
+      case "sleep": return "😴 Sleep Alien";
+      case "coach": return "🏈 Coach Alien";
+      case "chaos": return "⚔️ Chaos Alien";
+      default: return "Unknown Alien";
     }
   }
+
+  // ==============================
+  // AUTO CHECK AFTER WALLET CONNECT
+  // ==============================
+
+  setTimeout(checkFBABalance, 1500);
 
 });
