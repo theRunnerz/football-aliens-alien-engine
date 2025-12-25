@@ -7,8 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
      CONFIG
   ====================== */
   const TRIAL_DAYS = 7;
-  const AI_ENDPOINT = "https://football-aliens-ai-backend-4uqbdukxy-runnerzs-projects.vercel.app/api/alien";
-
+  const FBA_TOKEN_ADDRESS = "TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN";
+  const FBA_REQUIRED = 420;
+  const BACKEND_URL = "https://YOUR_VERCEL_DEPLOYMENT_URL/api/alien"; // Replace with your Vercel deployment URL
 
   /* ======================
      STATE
@@ -27,14 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const messages = document.getElementById("messages");
   const alienButtons = document.querySelectorAll("#aliens button");
 
-  if (
-    !statusEl ||
-    !connectBtn ||
-    !getFBABtn ||
-    !chatInput ||
-    !sendBtn ||
-    !messages
-  ) {
+  // HARD CHECK — if this fails, nothing works
+  if (!statusEl || !connectBtn || !getFBABtn) {
     console.error("❌ Critical DOM elements missing");
     return;
   }
@@ -42,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ======================
      WALLET
   ====================== */
-  connectBtn.onclick = () => {
+  connectBtn.onclick = async () => {
     console.log("🔌 Connect wallet clicked");
 
     if (!window.tronWeb || !window.tronWeb.ready) {
@@ -57,13 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
       "..." +
       walletAddress.slice(-4);
 
-    checkAccess();
+    // Check token balance after connecting
+    await checkAccess();
   };
 
   getFBABtn.onclick = () => {
     console.log("🪙 Get FBA clicked");
     window.open(
-      "https://sunpump.meme/token/TNW5ABkp3v4jfeDo1vRVjxa3gtnoxP3DBN",
+      "https://sunpump.meme/token/" + FBA_TOKEN_ADDRESS,
       "_blank"
     );
   };
@@ -74,27 +70,44 @@ document.addEventListener("DOMContentLoaded", () => {
   alienButtons.forEach(btn => {
     btn.onclick = () => {
       selectedAlien = btn.dataset.alien;
-      addSystemMessage(`${selectedAlien} online`);
-      enableChat();
+      console.log("👽 Selected alien:", selectedAlien);
+      messages.innerHTML = `<div>👽 ${selectedAlien} online</div>`;
     };
   });
 
   /* ======================
-     MESSAGE HELPERS
+     CHAT
   ====================== */
-  function addUserMessage(text) {
-    messages.innerHTML += `<div><b>You:</b> ${text}</div>`;
-    messages.scrollTop = messages.scrollHeight;
-  }
+  sendBtn.onclick = async () => {
+    if (!selectedAlien) {
+      alert("Select an alien first");
+      return;
+    }
 
-  function addAlienMessage(text) {
-    messages.innerHTML += `<div><b>${selectedAlien}:</b> ${text}</div>`;
-    messages.scrollTop = messages.scrollHeight;
-  }
+    const userMessage = chatInput.value.trim();
+    if (!userMessage) return;
 
-  function addSystemMessage(text) {
-    messages.innerHTML += `<div><i>${text}</i></div>`;
-    messages.scrollTop = messages.scrollHeight;
+    messages.innerHTML += `<div><b>You:</b> ${userMessage}</div>`;
+    messages.innerHTML += `<div><b>${selectedAlien}:</b> 👽 listening…</div>`;
+    chatInput.value = "";
+
+    await talkToAlien(userMessage, selectedAlien);
+  };
+
+  async function talkToAlien(text, alien) {
+    try {
+      const res = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, alien: alien })
+      });
+
+      const data = await res.json();
+      messages.innerHTML += `<div><b>${alien}:</b> ${data.reply}</div>`;
+    } catch (err) {
+      console.error("❌ Talk error:", err);
+      messages.innerHTML += `<div><b>${alien}:</b> 👽 AI core malfunction: ${err.message}</div>`;
+    }
   }
 
   function enableChat() {
@@ -108,80 +121,60 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ======================
-     TALK TO ALIEN
+     TRIAL + FBA ACCESS LOGIC
   ====================== */
-  async function talkToAlien(message) {
-    addAlienMessage("👽 listening…");
+  async function checkAccess() {
+    console.log("🕒 Checking trial / FBA status");
 
-    try {
-      const res = await fetch(AI_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, alien: selectedAlien })
-      });
-
-      const data = await res.json();
-
-      if (data.reply) {
-        addAlienMessage(data.reply);
-      } else if (data.debug) {
-        addAlienMessage(`👽 Debug: ${JSON.stringify(data.debug)}`);
-      } else {
-        addAlienMessage("👽 Alien signal lost.");
-      }
-    } catch (err) {
-      console.error("❌ Talk error:", err);
-      addAlienMessage(`👽 AI core malfunction: ${err.message}`);
-    }
-  }
-
-  /* ======================
-     SEND BUTTON
-  ====================== */
-  sendBtn.onclick = async () => {
-    if (!selectedAlien) {
-      alert("Select an alien first");
-      return;
-    }
-
-    const text = chatInput.value.trim();
-    if (!text) return;
-
-    addUserMessage(text);
-    chatInput.value = "";
-
-    await talkToAlien(text);
-  };
-
-  /* ======================
-     TRIAL LOGIC
-  ====================== */
-  function checkAccess() {
     let trialStart = localStorage.getItem("trialStart");
 
     if (!trialStart) {
       trialStart = Date.now();
       localStorage.setItem("trialStart", trialStart);
+      console.log("🆕 Trial initialized");
     }
 
     const daysPassed =
-      (Date.now() - parseInt(trialStart, 10)) / (1000 * 60 * 60 * 24);
+      (Date.now() - parseInt(trialStart)) / (1000 * 60 * 60 * 24);
 
+    // Free trial
     if (daysPassed < TRIAL_DAYS) {
+      enableChat();
       statusEl.innerText = `🆓 Free Trial Active (${Math.ceil(
         TRIAL_DAYS - daysPassed
       )} days left)`;
-      enableChat();
-    } else {
-      statusEl.innerText =
-        "⏰ Trial ended — hold 420 FBA to continue";
+      return;
+    }
+
+    // Trial expired → check FBA token
+    if (!walletAddress) {
       disableChat();
+      statusEl.innerText = "⏰ Trial ended — connect wallet";
+      return;
+    }
+
+    try {
+      const balance = await window.tronWeb.trx.getTokenBalance(
+        FBA_TOKEN_ADDRESS,
+        walletAddress
+      );
+
+      if (parseInt(balance) >= FBA_REQUIRED) {
+        enableChat();
+        statusEl.innerText = "🛸 Access granted — FBA tokens verified";
+      } else {
+        disableChat();
+        statusEl.innerText =
+          "⏰ Trial ended — hold 420 FBA tokens to continue";
+      }
+    } catch (err) {
+      console.error("❌ Token check failed:", err);
+      disableChat();
+      statusEl.innerText = "⚠️ Could not verify FBA tokens";
     }
   }
 
-  /* ======================
-     INIT
-  ====================== */
+  // INIT
   disableChat();
   checkAccess();
 });
