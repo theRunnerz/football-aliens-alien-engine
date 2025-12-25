@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(AI_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, alien: selectedAlien })
+        body: JSON.stringify({ message: text, alien: selectedAlien })
       });
 
       const data = await res.json();
