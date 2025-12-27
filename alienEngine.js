@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.onclick = () => {
       selectedAlien = btn.dataset.alien;
       console.log("👽 Selected alien:", selectedAlien);
-      messages.innerHTML += `<div>👽 ${selectedAlien} online</div>`;
+      appendMessage("alien", `👽 ${selectedAlien} online`);
     };
   });
 
@@ -108,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch(BACKEND_URL, {
         method: "POST",
+        mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, alien })
       });
@@ -191,3 +192,4 @@ document.addEventListener("DOMContentLoaded", () => {
   disableChat();
   checkAccess();
 });
+
