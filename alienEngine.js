@@ -2,7 +2,7 @@
 console.log("👽 Alien Engine loaded");
 
 const PROXY_URL =
-  "https://football-aliens-proxy-b5k8b5vfw-runnerzs-projects.vercel.app/api/alien";
+  "https://football-aliens-proxy-cidq0bs3d-runnerzs-projects.vercel.app/api/alien";
 
 let selectedAlien = "Zorg";
 
