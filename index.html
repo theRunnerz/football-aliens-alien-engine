@@ -28,6 +28,10 @@
       color: white;
     }
 
+    #aliens button.active {
+      background: #3a3aff;
+    }
+
     #chatBox {
       margin-top: 20px;
       max-width: 500px;
@@ -47,11 +51,12 @@
       min-height: 120px;
       opacity: 0.9;
       text-align: left;
+      white-space: pre-wrap;
     }
 
     #status {
       margin-top: 10px;
-      opacity: 0.8;
+      opacity: 0.85;
     }
   </style>
 </head>
@@ -62,21 +67,21 @@
   <button id="connectWalletBtn">🔌 Connect Wallet</button>
   <button id="getFBABtn">🪙 Get FBA</button>
 
-  <div id="status">Free Trial: Checking…</div>
+  <div id="status">🚀 Early Access Demo</div>
 
   <h3>Select Your Alien</h3>
   <div id="aliens">
-    <button data-alien="Zorg">Zorg</button>
-    <button data-alien="Xarn">Xarn</button>
-    <button data-alien="Blip">Blip</button>
+    <button class="alien-btn active" data-alien="Zorg">Zorg</button>
+    <button class="alien-btn" data-alien="Xarn">Xarn</button>
+    <button class="alien-btn" data-alien="Blip">Blip</button>
   </div>
 
   <div id="chatBox">
-    <input id="chatInput" placeholder="Talk to your alien..." disabled />
-    <button id="sendBtn" disabled>Send</button>
+    <input id="chatInput" placeholder="Talk to your alien..." />
+    <button id="sendBtn">Send</button>
     <div id="messages"></div>
   </div>
 
-  <script src="./alienEngine.js?v=4.2.0"></script>
+  <script src="./alienEngine.js?v=5.0.0"></script>
 </body>
 </html>
